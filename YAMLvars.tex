@@ -1,6 +1,5 @@
 % Kale Ewasiuk (kalekje@gmail.com)
-% 2021-09-24
-%
+% +REVDATE+
 % Copyright (C) 2021 Kale Ewasiuk
 %
 % Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,16 +23,42 @@
 % OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-\documentclass{article}
-\usepackage{url}
-\usepackage{YAMLvars}
+\documentclass[11pt,parskip=half]{scrartcl}
 \setlength{\parindent}{0ex}
-\setlength{\parskip}{0.75em}
+\newcommand{\llcmd}[1]{\leavevmode\llap{\texttt{\detokenize{#1}\ }}}
+\newcommand{\cmd}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\qcmd}[1]{``\cmd{#1}''}
+\usepackage{url}
+\usepackage{showexpl}
+\lstset{explpreset={justification=\raggedright,pos=r,wide=true}}
+\setlength\ResultBoxRule{0mm}
+\lstset{
+	language=[LaTeX]TeX,
+	basicstyle=\ttfamily\small,
+	commentstyle=\ttfamily\small\color{gray},
+	frame=none,
+	numbers=left,
+	numberstyle=\ttfamily\small\color{gray},
+	prebreak=\raisebox{0ex}[0ex][0ex]{\color{gray}\ensuremath{\hookleftarrow}},
+	extendedchars=true,
+	breaklines=true,
+	tabsize=4,
+}
+\addtokomafont{title}{\raggedright}
+\addtokomafont{author}{\raggedright}
+\addtokomafont{date}{\raggedright}
+\author{Kale Ewasiuk (\url{kalekje@gmail.com})}
+\usepackage[yyyymmdd]{datetime}\renewcommand{\dateseparator}{--}
+\date{\today}
+
+
+
+\usepackage{YAMLvars}
+\title{YAMLvars}
+\subtitle{a YAML variable parser for LuaLaTeX}
 
 \begin{document}
-
-{\noindent\huge\bfseries YAMLvars \LARGE -- a YAML variable parser for LuaLaTeX}\\
-    2021-09-24, Kale Ewasiuk, \url{kalekje@gmail.com}
+\maketitle
 
 YAMLvars is a LuaLaTeX-based package to help make definitions or produce LaTeX code using a YAML file.
 This package might be useful for you if you want to batch create docummnts
