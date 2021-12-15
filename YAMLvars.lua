@@ -51,6 +51,7 @@
 YAMLvars = {} -- self table
 YAMLvars.xfm = {}
 YAMLvars.prc = {}
+YAMLvars.dec = {} -- table of declare function
 
 YAMLvars.varsvals = {}
 YAMLvars.varspecs = {}
@@ -66,8 +67,15 @@ YAMLvars.varTemp = ''
 
 YAMLvars.tabmidrule = 'hline'
 
+YAMLvars.debug = false
+
 YAMLvars.yaml = require('tinyyaml')
 
+function YAMLvars.debugtalk(s, ss)
+    if YAMLvars.debug then
+        help_wrt(s, ss)
+    end
+end
 
 -- xfm functions (transforms) -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 function YAMLvars.xfm.addxspace(var, val)
@@ -143,17 +151,56 @@ end
 
 
 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- dec laration functions, -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+function YAMLvars.dec.gdef(var, dft)
+            YAMLvars.deccmd(var, dft)
+end
+
+function YAMLvars.dec.yvdef(var, dft)
+        YAMLvars.deccmd('yv--'..var, dft)
+end
+
+function YAMLvars.dec.toggle(var, dft)
+        tex.print('\\global\\newtoggle{'..var..'}')
+        YAMLvars.prc.toggle(var, dft)
+end
+
+function YAMLvars.dec.length(var, dft)
+        tex.print('\\global\\newlength{\\'..var..'}')
+        YAMLvars.prc.length(var, dft)
+end
+
 
 
 -- prc functions (processing) -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 function YAMLvars.prc.gdef(var, val)
     token.set_macro(var, val, 'global')
+    YAMLvars.debugtalk(var..' = '..val, 'prc gdef')
 end
 
 function YAMLvars.prc.yvdef(var, val)
     token.set_macro('yv--'..var, val, 'global')
+    YAMLvars.debugtalk('yv--'..var..' = '..val, 'prc yvdef')
+end
+
+function YAMLvars.prc.toggle(t, v) -- requires penlight extras
+    local s = ''
+    if hasval(v) then
+        s = '\\global\\toggletrue{'..t..'}'
+    else
+        s = '\\global\\togglefalse{'..t..'}'
+    end
+    tex.print(s)
+    YAMLvars.debugtalk(s, 'prc toggle')
+end
+
+function YAMLvars.prc.length(t, v)
+    v = v or '0pt'
+    local s = '\\global\\setlength{\\global\\'..t..'}{'..v..'}'
+    tex.print(s)
+    YAMLvars.debugtalk(s, 'prc length')
 end
 
 function YAMLvars.prc.PDFtitle(var, val)
@@ -211,13 +258,7 @@ function YAMLvars.prc.setdocvarOpts(var, val)
         tex.print(s)
 end
 
-function YAMLvars.prc.toggle(t, v) -- requires penlight extras
-    if hasval(v) then
-        tex.print('\\global\\toggletrue{'..t..'}')
-    else
-        tex.print('\\global\\togglefalse{'..t..'}')
-    end
-end
+
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
@@ -257,7 +298,7 @@ end
 function YAMLvars.declareYAMLvarsStr(y)
     local t = YAMLvars.yaml.parse(y)
     for var, specs in pairs(t) do
-        YAMLvars.varspecs[var] = {xfm=YAMLvars.xfrmDefault,prc=YAMLvars.prcDefault,dft=YAMLvars.dftDefault}
+        YAMLvars.varspecs[var] = {xfm=YAMLvars.xfmDefault,prc=YAMLvars.prcDefault,dft=YAMLvars.dftDefault}
         if type(specs) == 'string' then
             specs = {xfm={specs}}
         end
@@ -266,16 +307,16 @@ function YAMLvars.declareYAMLvarsStr(y)
             if s == 'xfm' and type(p) ~= 'table' then p = {p} end
             YAMLvars.varspecs[var][s] = p -- set property of var
         end
-        if YAMLvars.varspecs[var]['prc'] == 'gdef' then
-            YAMLvars.deccmd(var, YAMLvars.varspecs[var]['dft'])
-        elseif YAMLvars.varspecs[var]['prc'] == 'yvdef' then
-            YAMLvars.deccmd('yv--'..var, YAMLvars.varspecs[var]['dft'])
-        elseif YAMLvars.varspecs[var]['prc'] == 'toggle' then
-            tex.print('\\global\\newtoggle{'..var..'}')
-            YAMLvars.prc.toggle(var, YAMLvars.varspecs[var]['dft'])
+        if YAMLvars.dec[YAMLvars.varspecs[var].prc] ~= nil then
+            YAMLvars.dec[YAMLvars.varspecs[var].prc](var, YAMLvars.varspecs[var].dft)
+        --else -- actually don't a dec function for all
+        --    -- -- -- tex.print('\\PackageError{YAMLvars}{Declaration function for '..YAMLvarspecs[var].prc..'not found}{}')
         end
     end
+    YAMLvars.debugtalk(YAMLvars.varspecs, 'declared YAML vars, varspecs')
 end
+
+
 
 function YAMLvars.declareYAMLvarsFile(y)
     YAMLvars.declareYAMLvarsStr(getYAMLfile(y))

@@ -24,9 +24,13 @@
 
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{YAMLvars}[2021]
+\ProvidesPackage{YAMLvars}[+REVDATE+]
 
 \RequirePackage{luacode}
+\RequirePackage{xspace}
+\RequirePackage{etoolbox}
+\RequirePackage[pl,extras]{penlight}
+
 
 \luadirect{YAMLvars = require('YAMLvars')}
 
@@ -39,6 +43,8 @@
 }
 \DeclareOption{allowundeclared}{
         \luadirect{YAMLvars.allowUndeclared = true}
+}\DeclareOption{debug}{
+        \luadirect{YAMLvars.debug = true}
 }
 
 \DeclareOption*{\PackageWarning{YAMLvars}{Unknown option: '\CurrentOption'}{}}

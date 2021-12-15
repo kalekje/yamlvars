@@ -145,6 +145,12 @@ Rhead:
 \end{verbatim}
 
 
+To change how a variable is declared (initialize), you can modify or add functions in
+\texttt{YAMLvars.dec} table, where the index is the same as the \texttt{prc} name. 
+This function accepts two variables, the var name, and the default value set by dft.
+For lengths and toggles (from etoolbox), these functions are used to initialize lengths
+with newlength and newtoggle.
+
 
 \section{Parsing variables}
 A YAML file to be parsed will contain the variables as the top level keys, similar to declaring.
