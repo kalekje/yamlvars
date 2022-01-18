@@ -1,6 +1,6 @@
 --% Kale Ewasiuk (kalekje@gmail.com)
 --% +REVDATE+
---% Copyright (C) 2021 Kale Ewasiuk
+--% Copyright (C) 2021-2022 Kale Ewasiuk
 --%
 --% Permission is hereby granted, free of charge, to any person obtaining a copy
 --% of this software and associated documentation files (the "Software"), to deal
@@ -61,6 +61,7 @@ YAMLvars.dftDefault = nil
 YAMLvars.xfmDefault = {}
 
 YAMLvars.allowUndeclared = false
+YAMLvars.overwritedefs = false
 
 YAMLvars.valTemp = ''
 YAMLvars.varTemp = ''
@@ -69,7 +70,9 @@ YAMLvars.tabmidrule = 'hline'
 
 YAMLvars.debug = false
 
-YAMLvars.yaml = require('tinyyaml')
+YAMLvars.yaml = require'markdown-tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
+local pl = _G['penlight'] or _G['pl'] -- penlight for this namespace is pl
+
 
 function YAMLvars.debugtalk(s, ss)
     if YAMLvars.debug then
@@ -77,9 +80,10 @@ function YAMLvars.debugtalk(s, ss)
     end
 end
 
+
 -- xfm functions (transforms) -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 function YAMLvars.xfm.addxspace(var, val)
-    return val .. '\\xspace'
+    return val .. '\\xspace{}'
 end
 
 function YAMLvars.xfm.tab2arr(var, val)
@@ -99,10 +103,10 @@ function YAMLvars.xfm.arr2tabular(var, val)
 end
 
 
-function YAMLvars.xfm.arr2itemize(var, val)
+function YAMLvars.xfm.list2items(var, val) -- todo should be list2item
      return pl.List(val):map('\\item '.._1):join(' ')
 end
-
+YAMLvars.xfm.arr2itemize = YAMLvars.xfm.list2items
 
 function YAMLvars.xfm.arrsortAZ(var, val)
      return pl.List(val):sort(pl.operator.strlt)
@@ -126,12 +130,15 @@ function YAMLvars.xfm.arrsortlastnameAZ(var, val)
 end
 -- todo need distinction beyyween table and penlight list ???
 function YAMLvars.xfm.list2nl(var, val)
-    val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
-    return val:join('')
-    --return pl.tablex.reduce(_1.._2, val, '')
+    return pl.tablex.join(val,'\\\\ ')
 end
 
-function YAMLvars.xfm.lb2nl(var, val)
+    --val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
+    --return val:join('')
+    --return pl.tablex.reduce(_1.._2, val, '')
+
+
+function YAMLvars.xfm.lb2nl(var, val) --linebreak in text 2 new line
     val, _ = val:gsub('\n','\\\\ ')
     return val
 end
@@ -265,7 +272,7 @@ end
 
 
 function YAMLvars.prvcmd(cs, val) -- provide command via lua
-   if token.is_defined(cs) then
+   if token.is_defined(cs) and (not YAMLvars.overwritedefs) then
         tex.print('\\PackageError{YAMLvars}{Variable '..cs..' already defined, could not declare}{}')
     else
         token.set_macro(cs, val, 'global')
@@ -339,21 +346,29 @@ local function sub_lua_var(s, v1, v2)
     return s:gsub('([%A?%-?])('..v1..')([%W?%-?])', '%1'..v2..'%3') -- replace x variables
 end
 
+local _YV_invalid_expression = '\1 invalid expression'
+local _YV_no_return = '\2 no return val'
 local function eval_expr(func, var, val)
-    local s, c = func:gsub('^[=/]', {['/'] = '', ['='] = 'YAMLvars.valTemp = '}, 1) -- / is run code, = sets val = code
+    local s, c = func:gsub('^[=/]', {['/'] = '\2', ['='] = 'YAMLvars.valTemp = '}, 1) -- / is run code, = sets val = code
     if c == 0 then
-        return nil
+        return _YV_invalid_expression
     else
         --help_wrt(s, var)
         --help_wrt(val, var)
         YAMLvars.valTemp = val
         YAMLvars.varTemp = var
         --help_wrt(s, var)
+        s, c = s:gsub('\2', '') -- strip \2 that might have appeared if / was applied
         s = sub_lua_var(' '..s, 'x', 'YAMLvars.valTemp')
         s = sub_lua_var(s, 'v', 'YAMLvars.varTemp')
         --help_wrt(s, var)
-        loadstring(s)()
-        --help_wrt(val, var)
+        local f, err = pcall(loadstring(s))
+        if not f then
+            tex.print('\\PackageError{YAMLvars}{xfm with "= or /" error on var "'..var..'"}{}') --
+        end
+        if c > 0 then
+            return _YV_no_return
+        end
         return YAMLvars.valTemp
     end
 end
@@ -363,8 +378,9 @@ local function transform_and_prc(var, val)
         local f = YAMLvars.xfm[func]
         if f == nil then
             local val2 =  eval_expr(func, var, val)
-            if val2 == nil then
-                tex.print('\\PackageWarning{YAMLvars}{xfm function "'..func..'" not defined, skipping}{}')
+            if val2 == _YV_invalid_expression then
+                tex.print('\\PackageError{YAMLvars}{xfm function "'..func..'" not defined or invalid expression passed on var "'..var..'"}{}')
+            elseif val == _YV_no_return then
             else
                 val = val2
             end
@@ -374,7 +390,7 @@ local function transform_and_prc(var, val)
     end
     f = YAMLvars.prc[YAMLvars.varspecs[var]['prc']]
     if f == nil then
-        tex.print('\\PackageError{YAMLvars}{prc function "'..YAMLvars.varspecs[var]['prc']..'" not defined}{}')
+        tex.print('\\PackageError{YAMLvars}{prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined}{}')
     end
     f(var, val) -- prc the value of the variable
 end
@@ -383,7 +399,10 @@ function YAMLvars.parseYAMLvarsStr(y)
     YAMLvars.varsvals = YAMLvars.yaml.parse(y)
     for var, val in pairs(YAMLvars.varsvals) do
         if YAMLvars.varspecs[var] == nil then
-            check_def(var, val)
+            check_def(var, val) -- if not declared
+            -- todo consider free form parse declaring
+            -- variable name: {xfm:, dec:, prc:, val: }
+            -- definitely doable here
         else
             transform_and_prc(var, val)
         end

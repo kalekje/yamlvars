@@ -1,6 +1,6 @@
 % Kale Ewasiuk (kalekje@gmail.com)
 % +REVDATE+
-% Copyright (C) 2021 Kale Ewasiuk
+% Copyright (C) 2021-2022 Kale Ewasiuk
 %
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 \newcommand{\cmd}[1]{\texttt{\detokenize{#1}}}
 \newcommand{\qcmd}[1]{``\cmd{#1}''}
 \usepackage{url}
+\usepackage{xcolor}
 \usepackage{showexpl}
 \lstset{explpreset={justification=\raggedright,pos=r,wide=true}}
 \setlength\ResultBoxRule{0mm}
@@ -53,12 +54,25 @@
 
 
 
-\usepackage{YAMLvars}
+\usepackage[overwritedefs]{YAMLvars}
 \title{YAMLvars}
 \subtitle{a YAML variable parser for LuaLaTeX}
 
 \begin{document}
+
+
 \maketitle
+
+
+%%%%%
+
+%{NOTE::: \Huge todo use LTXexample and improve examples/testing\\
+%todo need way better error tracing for this pkg}
+
+
+
+%%%%%%%%%%%
+
 
 YAMLvars is a LuaLaTeX-based package to help make definitions or produce LaTeX code using a YAML file.
 This package might be useful for you if you want to batch create docummnts
@@ -85,25 +99,31 @@ declare the variables somewhere in the preamble.
 This option is offered to help with automation scripts.
 An example is showin in Section \ref{example}.
 
-\leavevmode\llap{\texttt{allowundeclared}\ \ \ }%
+\hspace*{3ex}\llcmd{allowundeclared}%
 It might be helpful to define something in your YAML parsing doc without declaring it.
 If you want this flexibility, use this setting. Note that eisting definitions will not be overwritten and an error
 will br thrown if the name exists.
 
+\llcmd{overwritedefs}Danger! This will allow you to \cmd{gdef} commands with YAML. Caution should be taken to not set definitions like \cmd{begin}, \cmd{section}, etc.
+
 \section{Dependencies}
-This package contains the \texttt{tinyyaml} Lua package.
-If you want to use it for other purposes, you can bring it into Lua by either:
+%This package contains the \texttt{tinyyaml} Lua package.
+\llcmd{Note:}This package requires that the \cmd{markdown} (\url{https://ctan.org/pkg/markdown}) be installed. This package does not use the package in its entirety, but rather depends on the YAML interpreter it comes with: \cmd{markdown-tinyyaml.lua}. This dependency is chosen to avoid redundancy in your TeX installation and align development of the \cmd{tinyyaml} Lua package.
+If you want to use the YAML interpreter for other purposes, you can bring it into Lua by either:
 \begin{verbatim}
 \directlua{yaml = YAMLvars.yaml}           or
-\directlua{yaml = require('tinyyaml')}
+\directlua{yaml = require'markdown-tinyyaml'}
 \end{verbatim}
-The distribution: \url{https://github.com/peposso/lua-tinyyaml}\\
+The distribution: \url{https://github.com/api7/lua-tinyyaml}\\
 The YAML specification: \url{https://yaml.org/spec/}\\
 
-Many of the ``transform'' and ``processing'' functions built-in to this package rely on other packages.
-\texttt{penlight},
-\texttt{xspace},
-\texttt{hyperref} for example.
+Many of the ``transform'' and ``processing'' functions built-in to this package rely on other packages,
+like
+\texttt{hyperref}, for example, but it is not loaded, and this package will only load
+\cmd{penlight},
+\cmd{luacode},
+\cmd{xspace}, and
+\cmd{etoolbox}.
 
 \section{Declaring variables}
 A declaration file can either be parsed with the command \texttt{declareYAMLvarsFile} command,
@@ -116,6 +136,9 @@ be a table that contains at least one of the following keys:\\
 \texttt{xfm} (transform, may be a string or list of strings),\\
 \texttt{prc} (processing, must be a single string), or \\
 \texttt{dft} (default value, if being defined. Must be a string).
+
+If you want to change the way a variable is initialized, you can change the function
+\cmd{YAMLvars.dec.PRC = function (var) ... end } where \cmd{PRC} is how the variable will be processed (\cmd{gdef}, \cmd{yvdef}, \cmd{length}, or something of your choosing).
 
 The default value for variables is the Lua \texttt{nil}.
 YAMLvars will first check if the definition exists, if so, an error will be thrown
@@ -210,7 +233,49 @@ This package includes \texttt{gdef} to set a definition, \texttt{yvdef} to defin
 \texttt{title, author, date} to set \texttt{\textbackslash @title, \textbackslash @author, \textbackslash @date},
 respectively
 
-    \section{Example}\label{example}
+\pagebreak
+
+\section{Some Examples}
+
+\begin{LTXexample}
+%! language = yaml
+\begin{declareYAMLvars}
+address:
+  xfm:
+    - list2nl
+    - = x..'!!!'
+name: null
+
+title:
+    xfm:
+        - lb2nl
+#        - / YAMLvars.prvcmd(titletext, YAMLvars.varsvals['atitle']:gsub('\n', ' ')..'\\xspace{}')
+\end{declareYAMLvars}
+
+%! language = yaml
+\begin{parseYAMLvars}
+title: |-
+    A Multiline
+    Monumental Title!
+
+name: Joe Smith
+address:
+  - 1234 Fake St.
+  - City
+\end{parseYAMLvars}
+
+\title
+
+%\titletext!
+
+\name
+
+\address
+
+\end{LTXexample}
+
+\pagebreak
+    \section{Automation Example}\label{example}
 
     Suppose you had a number of bills of sales in yaml format and wanted to produce some nice pdfs.
     The following code shows how this could be done.
