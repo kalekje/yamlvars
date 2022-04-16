@@ -46,22 +46,30 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-
-
 YAMLvars = {} -- self table
+
+YAMLvars.yaml = require'markdown-tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
+
+local pl = _G['penlight'] or _G['pl'] -- penlight for this namespace is pl
+if (__PL_EXTRAS__ == nil) or  (__PENLIGHT__ == nil) then
+    tex.sprint('\\PackageError{yamlvars}{penlight package with extras (or extrasnoglobals) option must be loaded before this package}{}')
+end
+
 YAMLvars.xfm = {}
 YAMLvars.prc = {}
 YAMLvars.dec = {} -- table of declare function
 
 YAMLvars.varsvals = {}
 YAMLvars.varspecs = {}
+YAMLvars.varslowcase = pl.List()
 
+YAMLvars.xfmDefault = {}
 YAMLvars.prcDefault = 'gdef'
 YAMLvars.dftDefault = nil
-YAMLvars.xfmDefault = {}
 
 YAMLvars.allowUndeclared = false
 YAMLvars.overwritedefs = false
+YAMLvars.lowvasevarall = false
 
 YAMLvars.valTemp = ''
 YAMLvars.varTemp = ''
@@ -70,20 +78,41 @@ YAMLvars.tabmidrule = 'hline'
 
 YAMLvars.debug = false
 
-YAMLvars.yaml = require'markdown-tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
-local pl = _G['penlight'] or _G['pl'] -- penlight for this namespace is pl
+
 
 
 function YAMLvars.debugtalk(s, ss)
     if YAMLvars.debug then
-        help_wrt(s, ss)
+        pl.tex.help_wrt(s, ss)
     end
 end
+
+function YAMLvars.pkgerr(m)
+    pl.tex.pkgerror('yamlvars', m, '', true)
+end
+
+
+
+
+-- todo need distinction beyyween table and penlight list ???
+    --val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
+    --return val:join('')
+    --return pl.tablex.reduce(_1.._2, val, '')
+
+function YAMLvars.xfm.markdown(var, val)
+     --return '\\begin{markdown} '..val..'\n \\end{markdown}'
+     pl.tex.help_wrt(val, md)
+     return [[begin markdown ..val..
+
+     par end markdown]]
+end
+
+
 
 
 -- xfm functions (transforms) -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 function YAMLvars.xfm.addxspace(var, val)
-    return val .. '\\xspace{}'
+    return val .. '\\xspace'
 end
 
 function YAMLvars.xfm.tab2arr(var, val)
@@ -95,15 +124,14 @@ function YAMLvars.xfm.arrsort2ZA(var, val)
 end
 
 function YAMLvars.xfm.addrule2arr(var, val)
-     return pl.array2d.map_slice2(_1..'\\\\\\'.. YAMLvars.tabmidrule..' ', val, 1,-1,-2,-1) -- todo make gmidrule
+     return pl.array2d.map_slice2(_1..'\\\\\\'.. YAMLvars.tabmidrule..' ', val, 1,-1,-2,-1)
 end
 
 function YAMLvars.xfm.arr2tabular(var, val)
      return pl.array2d.toTeX(val)..'\\\\'
 end
 
-
-function YAMLvars.xfm.list2items(var, val) -- todo should be list2item
+function YAMLvars.xfm.list2items(var, val)
      return pl.List(val):map('\\item '.._1):join(' ')
 end
 YAMLvars.xfm.arr2itemize = YAMLvars.xfm.list2items
@@ -128,34 +156,40 @@ function YAMLvars.xfm.arrsortlastnameAZ(var, val)
     val = pl.List(val):sort(complastname)
     return val
 end
--- todo need distinction beyyween table and penlight list ???
+
 function YAMLvars.xfm.list2nl(var, val)
-    return pl.tablex.join(val,'\\\\ ')
+    if type(val) == 'string' then
+        return val
+    end
+    return pl.List(val):join('\\\\ ')
 end
 
-    --val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
-    --return val:join('')
-    --return pl.tablex.reduce(_1.._2, val, '')
+function YAMLvars.xfm.list2and(var, val) -- for doc vars like author, publisher
+    if type(val) == 'string' then
+        return val
+    end
+    return pl.List(val):join('\\and ')
+end
 
 
-function YAMLvars.xfm.lb2nl(var, val) --linebreak in text 2 new line
+function YAMLvars.xfm.lb2nl(var, val) --linebreak in text 2 newline \\
     val, _ = val:gsub('\n','\\\\ ')
+    return val
+end
+
+function YAMLvars.xfm.lb2newline(var, val) --linebreak in text 2 newline \\
+    val, _ = val:gsub('\n','\\newline ')
+    return val
+end
+
+function YAMLvars.xfm.lb2par(var, val) --linebreak in text 2 new l
+    val, _ = val:gsub('\n%s*\n','\\par ')
     return val
 end
 
 function YAMLvars.xfm.lowercase(var, val)
     return val:lower()
 end
-
-
-function YAMLvars.xfm.markdown(var, val)
-     --return '\\begin{markdown} '..val..'\n \\end{markdown}'
-     help_wrt(val, md)
-     return [[begin markdown ..val..
-
-     par end markdown]]
-end
-
 
 
 -- dec laration functions, -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -183,18 +217,19 @@ end
 -- prc functions (processing) -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 function YAMLvars.prc.gdef(var, val)
-    token.set_macro(var, val, 'global')
+    --token.set_macro(var, val, 'global') -- old way, don't do as it will cause issues if val contains undef'd macros
+    pl.tex.defcmd(var, val)
     YAMLvars.debugtalk(var..' = '..val, 'prc gdef')
 end
 
 function YAMLvars.prc.yvdef(var, val)
-    token.set_macro('yv--'..var, val, 'global')
+    pl.tex.defmacro('yv--'..var, val)
     YAMLvars.debugtalk('yv--'..var..' = '..val, 'prc yvdef')
 end
 
 function YAMLvars.prc.toggle(t, v) -- requires penlight extras
     local s = ''
-    if hasval(v) then
+    if pl.hasval(v) then
         s = '\\global\\toggletrue{'..t..'}'
     else
         s = '\\global\\togglefalse{'..t..'}'
@@ -210,83 +245,82 @@ function YAMLvars.prc.length(t, v)
     YAMLvars.debugtalk(s, 'prc length')
 end
 
+
+
+function YAMLvars.prc.setATvar(var, val) -- set a @var directly: eg \gdef\@title{val}
+    pl.tex.defcmdAT('@'..var, val)
+end
+
+
+function YAMLvars.prc.setdocvar(var, val) -- call a document var \var{val} = \title{val}
+    -- YAML syntax options
+    -- k: v -> \k{v}
+    -- k:
+    --   v1: v2      -> \k[v2]{v1}
+    -- k: [v1, v2]   -> \k[v2]{v1}
+    -- k: [v1]       -> \k{v1}
+    if type(val) ~= 'table' then
+        tex.sprint('\\'..var..'{'..val..'}')
+    elseif #val == 0 then  -- assume single k,v passed
+        for k,v in pairs(val) do
+            tex.sprint('\\'..var..'['..v..']{'..k..'}')
+        end
+    elseif #val == 1 then
+        tex.sprint('\\'..var..'{'..val[1]..'}')
+    else
+        tex.sprint('\\'..var..'['..val[2]..']{'..val[1]..'}')
+    end
+end
+
+
+function YAMLvars.prc.setPDFdata(var, val)
+    --update pdf meta data table (via penlight), uses pdfx xmpdata
+    -- requires a table input
+    for k, v in pairs(val) do
+        if type(v) == 'table' then
+            v = pl.List(v):join('\\sep ')
+        end
+        pl.tex.updatePDFtable(k, v, true)
+    end
+end
+
+-- with hyperref package
 function YAMLvars.prc.PDFtitle(var, val)
     tex.print('\\hypersetup{pdftitle={'..val..'}}')
-    --tex.print('\\setPDFtitle{'..val..'}')
 end
 
 function YAMLvars.prc.PDFauthor(var, val)
     tex.print('\\hypersetup{pdfauthor={'..val..'}}')
-        --tex.print('\\setPDFauthor{'..val..'}')
 end
 
+-- --
 
-function YAMLvars.prc.setheader(val, rl)
-    local _, count = string.gsub(val, '\\\\', '')
-    if count == 0 then
-        val = '{\\ }\\\\'..val
-    end
-    val = '\\setstretch{0.8}'..val
-    tex.print('\\'..rl..'ohead{'..val..'}')
-end
 
-function YAMLvars.prc.rhead(var, val)
-    YAMLvars.prc.setheader(val, 'r')
-end
-
-function YAMLvars.prc.lhead(var, val)
-    YAMLvars.prc.setheader(val, 'l')
-end
-
-function YAMLvars.prc.title(var, val)
-        token.set_macro('@title', val, 'global')
-end
-
-function YAMLvars.prc.author(var, val)
-        token.set_macro('@author', val, 'global')
-end
-
-function YAMLvars.prc.date(var, val)
-        token.set_macro('@date', val, 'global')
-end
-
--- do this with author, title, company
-function YAMLvars.prc.setdocvar(var, val)
-        tex.print('\\'..var..'{'..val..'}')
-end
-
-function YAMLvars.prc.setdocvarOpts(var, val)
-        local s = '\\'..var..'{'..tostring(val[1])..'}'
-        for k, v in pairs(val) do
-            if k > 1 then
-                s = s..'['..tostring(v)..']'
-            end
-        end
-        tex.print(s)
-end
+-- ??
+--token.set_macro('yv--'..var, val, 'global') -- todo fix with csname hack?
 
 
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
-
-
-function YAMLvars.prvcmd(cs, val) -- provide command via lua
+function YAMLvars.makecmd(cs, val) -- provide command via lua
    if token.is_defined(cs) and (not YAMLvars.overwritedefs) then
-        tex.print('\\PackageError{YAMLvars}{Variable '..cs..' already defined, could not declare}{}')
+        YAMLvars.pkgerr('Variable '..cs..' already defined, could not declare')
     else
-        token.set_macro(cs, val, 'global')
+        pl.tex.defcmd(cs, val)
+        --token.set_macro(cs, val, 'global') -- issues if val contains undefined macro
     end
 end
 
 function YAMLvars.deccmd(cs, def)
     if def == nil then
-        YAMLvars.prvcmd(cs, '\\PackageError{YAMLvars}{Variable "'..cs..'" was declared and used but, not set}{}')
+        YAMLvars.makecmd(cs, '\\PackageError{YAMLvars}{Variable "'..cs..'" was declared and used but, not set}{}')
     else
-        YAMLvars.prvcmd(cs, def)
+        YAMLvars.makecmd(cs, def)
     end
 end
 
+-- -- -- -- -- --
 
 local function getYAMLfile(y)
     local f = io.open(y,"r")
@@ -295,16 +329,19 @@ local function getYAMLfile(y)
         io.close(f)
         return y
     else
-        tex.print('\\PackageError{YAMLvars}{YAML file "'..y..'" not found}{}')
+        YAMLvars.pkgerr('YAML file "'..y..'" not found')
         return 'YAMLvars: FileNotFound'
     end
 end
 
 
-
 function YAMLvars.declareYAMLvarsStr(y)
     local t = YAMLvars.yaml.parse(y)
     for var, specs in pairs(t) do
+        if pl.hasval(specs['lowcasevar']) or YAMLvars.lowvasevarall then
+            var = var:lower()
+            YAMLvars.varslowcase:append(var)
+        end
         YAMLvars.varspecs[var] = {xfm=YAMLvars.xfmDefault,prc=YAMLvars.prcDefault,dft=YAMLvars.dftDefault}
         if type(specs) == 'string' then
             specs = {xfm={specs}}
@@ -334,11 +371,14 @@ local  function check_def(var, val)
     if YAMLvars.allowUndeclared then
         if YAMLvars.prcDefault == 'yvdef' then
             YAMLvars.prc.yvdef(var, val)
+            YAMLvars.debugtalk(var..' = '..val,'yvdef made (undeclared)')
         else
-            YAMLvars.prvcmd(var, val)
+            YAMLvars.makecmd(var, val)
+            YAMLvars.debugtalk(var..' = '..val,'gdef made (undeclared)')
         end
      else
-        tex.print('\\PackageError{YAMLvars}{Variable "'..var..'" set but not declared}{}')
+        --tex.print('\\PackageError{YAMLvars}{Variable "'..var..'" set but not declared}{}')
+        YAMLvars.pkgerr('Variable "'..var..'" set but not declared')
     end
 end
 
@@ -348,25 +388,33 @@ end
 
 local _YV_invalid_expression = '\1 invalid expression'
 local _YV_no_return = '\2 no return val'
+
+local function expr_err(var, val)
+    --tex.print('\\PackageError{YAMLvars}{xfm with "= or /" error on var "'..var..'"}{}') -- todo make program stop
+    YAMLvars.pkgerr('xfm with "= or /" error on var "'..var..'"}{}') -- todo make program stop
+end
+
 local function eval_expr(func, var, val)
     local s, c = func:gsub('^[=/]', {['/'] = '\2', ['='] = 'YAMLvars.valTemp = '}, 1) -- / is run code, = sets val = code
     if c == 0 then
         return _YV_invalid_expression
     else
-        --help_wrt(s, var)
-        --help_wrt(val, var)
+        --pl.tex.help_wrt(s, var)
+        --pl.tex.help_wrt(val, var)
         YAMLvars.valTemp = val
         YAMLvars.varTemp = var
-        --help_wrt(s, var)
+        --pl.tex.help_wrt(s, var)
         s, c = s:gsub('\2', '') -- strip \2 that might have appeared if / was applied
         s = sub_lua_var(' '..s, 'x', 'YAMLvars.valTemp')
         s = sub_lua_var(s, 'v', 'YAMLvars.varTemp')
-        --help_wrt(s, var)
+        --pl.tex.help_wrt(s, var)
         local f, err = pcall(loadstring(s))
         if not f then
-            tex.print('\\PackageError{YAMLvars}{xfm with "= or /" error on var "'..var..'"}{}') --
+            --tex.print('\\PackageError{YAMLvars}{xfm with "= or /" error on var "'..var..'"}{}') --
+            YAMLvars.pkgerr('xfm with "= or /" error on var "'..var) --
         end
         if c > 0 then
+            expr_err(var)
             return _YV_no_return
         end
         return YAMLvars.valTemp
@@ -379,7 +427,8 @@ local function transform_and_prc(var, val)
         if f == nil then
             local val2 =  eval_expr(func, var, val)
             if val2 == _YV_invalid_expression then
-                tex.print('\\PackageError{YAMLvars}{xfm function "'..func..'" not defined or invalid expression passed on var "'..var..'"}{}')
+                --tex.print('\\PackageError{YAMLvars}{xfm function "'..func..'" not defined or invalid expression passed on var "'..var..'"}{}')
+                YAMLvars.pkgerr('xfm function "'..func..'" not defined or invalid expression passed on var "'..var)
             elseif val == _YV_no_return then
             else
                 val = val2
@@ -390,7 +439,8 @@ local function transform_and_prc(var, val)
     end
     f = YAMLvars.prc[YAMLvars.varspecs[var]['prc']]
     if f == nil then
-        tex.print('\\PackageError{YAMLvars}{prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined}{}')
+        --tex.print('\\PackageError{YAMLvars}{prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined}{}')
+        YAMLvars.pkgerr('prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined')
     end
     f(var, val) -- prc the value of the variable
 end
@@ -398,6 +448,9 @@ end
 function YAMLvars.parseYAMLvarsStr(y)
     YAMLvars.varsvals = YAMLvars.yaml.parse(y)
     for var, val in pairs(YAMLvars.varsvals) do
+        if YAMLvars.varslowcase:contains(var:lower()) then
+            var = var:lower()
+        end
         if YAMLvars.varspecs[var] == nil then
             check_def(var, val) -- if not declared
             -- todo consider free form parse declaring
@@ -425,27 +478,6 @@ end
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
--- https://tex.stackexchange.com/questions/38150/in-lualatex-how-do-i-pass-the-content-of-an-environment-to-lua-verbatim
-recordedbuf = ""
-function readbuf(buf)
-    i,j = string.find(buf, '\\end{%w+}')
-     if i==nil then -- if not ending an environment
-        recordedbuf = recordedbuf .. buf .. "\n"
-        return ""
-    else
-        return nil
-    end
-end
-
-function startrecording()
-    recordedbuf = ""
-    luatexbase.add_to_callback('process_input_buffer', readbuf, 'readbuf')
-end
-
-function stoprecording()
-    luatexbase.remove_from_callback('process_input_buffer', 'readbuf')
-    recordedbuf = recordedbuf:gsub("\\end{%w+}\n","")
-end
 
 
 
@@ -469,13 +501,130 @@ function YAMLvars.getYAMLcli()
           end
       end
     end
-    --help_wrt(t)
+    --pl.tex.help_wrt(t)
     return t
  end
 
 
+
+YAMLvars.yaml2PDFmetadata = function(ytext) -- parse a YAML file and update the pdfmetadata table
+      __PDFmetadata__ = __PDFmetadata__ or {} -- existing metadata
+      if ytext ~= nil then
+        local pdfmetadata_yaml = YAMLvars.yaml.parse(ytext) -- new metadata
+        local t = {}
+        for k,v in pairs(pdfmetadata_yaml) do  -- ensure first character is capital letter
+            t[k:upfirst()] = v
+        end
+        __PDFmetadata__ = table.update(__PDFmetadata__, t)
+      end
+    end
+
+
+
+
+
+
+
+-- graveyard
+
+
+function YAMLvars.prc.setheader(val, rl)
+    local _, count = string.gsub(val, '\\\\', '')
+    if count == 0 then
+        val = '{\\ }\\\\'..val
+    end
+    val = '\\setstretch{0.8}'..val
+    tex.print('\\'..rl..'ohead{'..val..'}')
+end
+
+
+function YAMLvars.prc.setheader(val, rl)
+    local _, count = string.gsub(val, '\\\\', '')
+    if count == 0 then
+        val = '{\\ }\\\\'..val
+    end
+    val = '\\setstretch{0.8}'..val
+    tex.print('\\'..rl..'ohead{'..val..'}')
+end
+
+function YAMLvars.prc.rhead(var, val)
+    YAMLvars.prc.setheader(val, 'r')
+end
+
+function YAMLvars.prc.lhead(var, val)
+    YAMLvars.prc.setheader(val, 'l')
+end
+
+
+
+function YAMLvars.prc.memoTo(var, val)
+    for k, v in pairs(v) do
+        pl.tex.defcmd('@memoTo', val)
+        v = YAMLvars.xfm.list2nl(var, v)
+        pl.tex.defcmd('@memoTo', val)
+    end
+end
+function YAMLvars.prc.memoFr(var, val)
+    for k, v in pairs(v) do
+        pl.tex.defcmd('@memoFr', val)
+        v = YAMLvars.xfm.list2nl(var, v)
+        pl.tex.defcmd('@memoFrAddr', val)
+
+    end
+end
+-- produce \Var[val[2]\\val[3].....\val[n]]{val[1]}
+--function YAMLvars.prc.setdocvarOpt(var, val)
+--       if type(val) ~= 'table' then
+--            val = {val}
+--        end
+--        local s = '\\'..var..'{'..tostring(val[1])..'}'
+--        s = s..'['..pl.List(v):map_slice1():join()..']' -- what does this do?
+--        tex.print(s)
+--end
+--
+--
+--function YAMLvars.prc.setdocvarOpts(var, val)
+--        if type(val) ~= 'table' then
+--            val = {val}
+--        end
+--        local s = '\\'..var..'{'..tostring(val[1])..'}'
+--        for k, v in pairs(val) do
+--            if k > 1 then
+--                s = s..'['..tostring(v)..']'
+--            end
+--        end
+--        tex.print(s)
+--end
+
 return YAMLvars
 
+
+
+
+
+
+
+
+
+     --token.set_macro('@memoFr', k, 'global')
+        --token.set_macro('@memoFrAddr', v, 'global')
+        --token.set_macro('@memoTo', k, 'global')
+        --token.set_macro('@memoToAddr', v, 'global')
+        --help_wrt(var,val)
+        --        token.set_macro('@'..var, val, 'global')
+
+--function YAMLvars.prc.title(var, val)
+--        YAMLvars.prc.setdocvar('title', val)
+--end
+--
+--
+--function YAMLvars.prc.author(var, val)
+--        YAMLvars.prc.setdocvar('author', val)
+--end
+--
+--function YAMLvars.prc.date(var, val)
+--        YAMLvars.prc.setdocvar('date', val)
+--end
 
 
   --clean = clean or true
@@ -483,10 +632,11 @@ return YAMLvars
     --    y = clean_tex_spaces(y)
     --end
 --local function clean_tex_spaces(s)
---    help_wrt(s)
+--    pl.tex.help_wrt(s)
 --    if s:sub(1,2) == '%s' then
 --        s, _ = s:gsub('%s+','',1)
 --    end
 --    s, _ = s:gsub('\\par ','\n\n')
 --    return s
 --end
+

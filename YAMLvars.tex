@@ -53,7 +53,7 @@
 \date{\today}
 
 
-
+\usepackage[pl,extrasnoglobals]{penlight}
 \usepackage[overwritedefs]{YAMLvars}
 \title{YAMLvars}
 \subtitle{a YAML variable parser for LuaLaTeX}
@@ -101,8 +101,8 @@ An example is showin in Section \ref{example}.
 
 \hspace*{3ex}\llcmd{allowundeclared}%
 It might be helpful to define something in your YAML parsing doc without declaring it.
-If you want this flexibility, use this setting. Note that eisting definitions will not be overwritten and an error
-will br thrown if the name exists.
+If you want this flexibility, use this setting. Note that existing definitions will not be overwritten and an error
+will br thrown if the name exists. Alternatively, you can use the commands \cmd{\AllowUndeclaredYV} or \cmd{\ForbidUndeclaredYV} to toggle this behavior.
 
 \llcmd{overwritedefs}Danger! This will allow you to \cmd{gdef} commands with YAML. Caution should be taken to not set definitions like \cmd{begin}, \cmd{section}, etc.
 
@@ -147,6 +147,16 @@ If the token is available, it is set to a package error, so that if the variable
 tell the user they forgot to set it.
 This will be overwritten when you parse the variables and assign a value to it.
 
+\paragraph{If you want a case-insensitive variable} In the declaration YAML document,
+add a \cmd{lowcasevar: true} under the variable name.
+This will make the variable name lowercase before any transforms or processing is done.
+For example, if you have \cmd{title} as a YAML variable to set
+the \cmd{prc} function \cmd{setdocvar}, a user could write
+\cmd{Title} in the parsing file and still have it work.
+You can toggle this behaviour globally with
+the commands \cmd{\lowercasevarYVon} and \cmd{\lowercasevarYVoff}
+See the last example below.
+
 You can change the default \texttt{xfm}, \texttt{prc}, or \texttt{dft} by changing
 the value (in Lua): \texttt{YAMLvars.xfmDefault = ''} etc.
 
@@ -164,6 +174,17 @@ Revisions:
   xfm: [sortZA, list2tab]
 Rhead:
   prc: setRightHead
+
+
+author:
+  xfm: list2and     # (joins a list with \and (or lets a single string be passed)
+  prc: setdocvar # calls \author{val}
+  lowcasevar: true  # allows user to use Title: or TITLE:
+  
+title:
+  xfm: lb2nl     # (make line-breaks \\)
+  prc: setdocvar # calls \title{val}
+  lowcasevar: true  # allows user to use Title: or TITLE:
 \end{declareYAMLvars}
 \end{verbatim}
 
@@ -186,14 +207,14 @@ Here is an example of a parsing document.
 
 
 \begin{verbatim}
-\begin{declareYAMLvars}
+\begin{parseYAMLvars}
 Location: Planet Earth
 People:                # a YAML list
   - Some One           # turns into Lua table
   - No Body
 # company assumed Amazon if not set here
 Rhead: \today
-\end{declareYAMLvars}
+\end{parseYAMLvars}
 \end{verbatim}
 
 
@@ -364,5 +385,13 @@ Items:
     Sunscreen: 5
     Hat: 12
     \end{verbatim}
+
+
+
+\clearpage
+\section{xfm, dec, prc functions (from yamlvars.lua)}
+
+\lstinputlisting[linerange=113-296]{yamlvars.lua}
+
 \end{document}
 

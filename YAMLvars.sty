@@ -32,7 +32,7 @@
 \RequirePackage{luacode}
 \RequirePackage{xspace}
 \RequirePackage{etoolbox}
-\RequirePackage[pl,extras]{penlight}
+\RequirePackage{penlight} % no option passed here, but extras must be used, error will be thrown if not
 
 \luadirect{YAMLvars = require('YAMLvars')}
 
@@ -53,6 +53,9 @@
         \luadirect{YAMLvars.debug = true}
 }
 
+\newcommand{\AllowUndeclaredYV}{\luadirect{YAMLvars.allowUndeclared = true}}
+\newcommand{\ForbidUndeclaredYV}{\luadirect{YAMLvars.allowUndeclared = false}}
+
 \DeclareOption*{\PackageWarning{YAMLvars}{Unknown option: '\CurrentOption'}{}}
 \ProcessOptions\relax
 
@@ -61,14 +64,28 @@
 \newcommand{\parseYAMLvarsFile}[1]{\luadirect{YAMLvars.parseYAMLvarsFile(\luastring{#1})}}
 
 
-\newenvironment{declareYAMLvars}{\luadirect{startrecording()}}{\luadirect{stoprecording()}
-\luadirect{YAMLvars.declareYAMLvarsStr(recordedbuf)}
+\newenvironment{declareYAMLvars}{\luadirect{pl.tex.startrecording()}}{\luadirect{pl.tex.stoprecording()}
+        \luadirect{YAMLvars.declareYAMLvarsStr(pl.tex.recordedbuf)}
 }
 
-\newenvironment{parseYAMLvars}{\luadirect{startrecording()}}{\luadirect{stoprecording()}
-\luadirect{YAMLvars.parseYAMLvarsStr(recordedbuf)}
+\newenvironment{parseYAMLvars}{\luadirect{pl.tex.startrecording()}}{\luadirect{pl.tex.stoprecording()}
 }
+\AfterEndEnvironment{parseYAMLvars}{\luadirect{YAMLvars.parseYAMLvarsStr(pl.tex.recordedbuf)}}
+% necessary hack to get rohead and lohead to work..
+% .. https://tex.stackexchange.com/questions/637018/setting-koma-heading-within-lua/637021?noredirect=1#comment1587387_637021
 
 \newcommand{\resetYAMLvarsspec}{\luadirect{YAMLvars.varspec = {}}}
 
-\newcommand{\AllowUndeclaredYV}{\luadirect{YAMLvars.allowUndeclared = true}}
+
+\newcommand{\lowercasevarYVon}{\luadirect{YAMLvars.lowvasevarall = true}}
+\newcommand{\lowercasevarYVoff}{\luadirect{YAMLvars.lowvasevarall = false}}
+
+
+
+\newenvironment{parseYAMLpdfdata}{\luadirect{pl.tex.startrecording()}}{
+  \luadirect{pl.tex.stoprecording()
+  YAMLvars.yaml2PDFmetadata(pl.tex.recordedbuf)
+  pl.tex.writePDFmetadata()
+  }
+}
+
