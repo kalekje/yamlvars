@@ -55,31 +55,53 @@ if (__PL_EXTRAS__ == nil) or  (__PENLIGHT__ == nil) then
     tex.sprint('\\PackageError{yamlvars}{penlight package with extras (or extrasnoglobals) option must be loaded before this package}{}')
 end
 
+-- UI tables to extend functionality
 YAMLvars.xfm = {}
 YAMLvars.prc = {}
 YAMLvars.dec = {} -- table of declare function
 
+-- internal variables
 YAMLvars.varsvals = {}
 YAMLvars.varspecs = {}
 YAMLvars.varslowcase = pl.List()
 
-YAMLvars.xfmDefault = {}
-YAMLvars.prcDefault = 'gdef'
-YAMLvars.dftDefault = nil
-
-YAMLvars.allowUndeclared = false
-YAMLvars.overwritedefs = false
-YAMLvars.lowvasevarall = false
-
 YAMLvars.valTemp = ''
 YAMLvars.varTemp = ''
 
-YAMLvars.tabmidrule = 'hline'
 
 YAMLvars.debug = false
 
+YAMLvars.setts = {}
+YAMLvars.setts.undeclared = false
+YAMLvars.setts.overwrite = false
+YAMLvars.setts.lowercase = false
+YAMLvars.setts.tabmidrule = 'midrule'
+YAMLvars.setts.xfm = {}
+YAMLvars.setts.prc = 'gdef'
+YAMLvars.setts.dft = ''
 
+YAMLvars.settsdefault = pl.tablex.deepcopy(YAMLvars.setts)
 
+function YAMLvars.setts2default()
+    YAMLvars.setts = pl.tablex.deepcopy(YAMLvars.settsdefault)
+end
+
+function YAMLvars.updatesettskv(kv, res, def)
+    def = def or false
+    ss = 'setts' -- setts or settsdefault
+    if def then ss = 'settsdefault' end
+
+    if res == pl.tex._xTrue then
+        YAMLvars.setts2default()
+    end
+
+    kv = luakeys.parse(kv)
+    if type(kv.xfm) == 'string' then
+        kv.xfm = pl.stringx.split(kv.xfm)
+    end
+
+    pl.tablex.update(YAMLvars[ss], kv)
+end
 
 function YAMLvars.debugtalk(s, ss)
     if YAMLvars.debug then
@@ -93,12 +115,6 @@ end
 
 
 
-
--- todo need distinction beyyween table and penlight list ???
-    --val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
-    --return val:join('')
-    --return pl.tablex.reduce(_1.._2, val, '')
-
 function YAMLvars.xfm.markdown(var, val)
      --return '\\begin{markdown} '..val..'\n \\end{markdown}'
      pl.tex.help_wrt(val, md)
@@ -106,7 +122,6 @@ function YAMLvars.xfm.markdown(var, val)
 
      par end markdown]]
 end
-
 
 
 
@@ -124,7 +139,7 @@ function YAMLvars.xfm.arrsort2ZA(var, val)
 end
 
 function YAMLvars.xfm.addrule2arr(var, val)
-     return pl.array2d.map_slice2(_1..'\\\\\\'.. YAMLvars.tabmidrule..' ', val, 1,-1,-2,-1)
+     return pl.array2d.map_slice2(_1..'\\\\\\'.. YAMLvars.setts.tabmidrule..' ', val, 1,-1,-2,-1)
 end
 
 function YAMLvars.xfm.arr2tabular(var, val)
@@ -304,7 +319,7 @@ end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 function YAMLvars.makecmd(cs, val) -- provide command via lua
-   if token.is_defined(cs) and (not YAMLvars.overwritedefs) then
+   if token.is_defined(cs) and (not YAMLvars.setts.overwrite) then
         YAMLvars.pkgerr('Variable '..cs..' already defined, could not declare')
     else
         pl.tex.defcmd(cs, val)
@@ -334,15 +349,18 @@ local function getYAMLfile(y)
     end
 end
 
+local function default_stuff()
+    return {xfm=YAMLvars.setts.xfm,prc=YAMLvars.setts.prc,dft=YAMLvars.setts.dft}
+end
 
 function YAMLvars.declareYAMLvarsStr(y)
     local t = YAMLvars.yaml.parse(y)
     for var, specs in pairs(t) do
-        if pl.hasval(specs['lowcasevar']) or YAMLvars.lowvasevarall then
+        if pl.hasval(specs['lowcasevar']) or YAMLvars.setts.lowercase then
             var = var:lower()
             YAMLvars.varslowcase:append(var)
         end
-        YAMLvars.varspecs[var] = {xfm=YAMLvars.xfmDefault,prc=YAMLvars.prcDefault,dft=YAMLvars.dftDefault}
+        YAMLvars.varspecs[var] = default_stuff()
         if type(specs) == 'string' then
             specs = {xfm={specs}}
         end
@@ -366,21 +384,6 @@ function YAMLvars.declareYAMLvarsFile(y)
     YAMLvars.declareYAMLvarsStr(getYAMLfile(y))
 end
 
-
-local  function check_def(var, val)
-    if YAMLvars.allowUndeclared then
-        if YAMLvars.prcDefault == 'yvdef' then
-            YAMLvars.prc.yvdef(var, val)
-            YAMLvars.debugtalk(var..' = '..val,'yvdef made (undeclared)')
-        else
-            YAMLvars.makecmd(var, val)
-            YAMLvars.debugtalk(var..' = '..val,'gdef made (undeclared)')
-        end
-     else
-        --tex.print('\\PackageError{YAMLvars}{Variable "'..var..'" set but not declared}{}')
-        YAMLvars.pkgerr('Variable "'..var..'" set but not declared')
-    end
-end
 
 local function sub_lua_var(s, v1, v2)
     return s:gsub('([%A?%-?])('..v1..')([%W?%-?])', '%1'..v2..'%3') -- replace x variables
@@ -445,21 +448,23 @@ local function transform_and_prc(var, val)
     f(var, val) -- prc the value of the variable
 end
 
+
+
 function YAMLvars.parseYAMLvarsStr(y)
     YAMLvars.varsvals = YAMLvars.yaml.parse(y)
     for var, val in pairs(YAMLvars.varsvals) do
         if YAMLvars.varslowcase:contains(var:lower()) then
             var = var:lower()
         end
-        if YAMLvars.varspecs[var] == nil then
-            check_def(var, val) -- if not declared
-            -- todo consider free form parse declaring
-            -- variable name: {xfm:, dec:, prc:, val: }
-            -- definitely doable here
-        else
+        if YAMLvars.varspecs[var] == nil and YAMLvars.setts.undeclared then
+            YAMLvars.debugtalk(YAMLvars.setts, 'XYZ')
+            YAMLvars.varspecs[var] = default_stuff()  -- if undeclared and allowing, add to varspec set to default xfm, prc, dft
+        end
+        if YAMLvars.varspecs[var] ~= nil then -- if specified, process
             transform_and_prc(var, val)
         end
     end
+    --YAMLvars.restoresettings()
 end
 
 function YAMLvars.parseYAMLvarsFile(y)
@@ -605,6 +610,31 @@ return YAMLvars
 
 
 
+--YAMLvars.tempdeclaresetts = '' -- temportary settings, todo intended to be passed as kv to envir
+--
+--function YAMLvars.storesettings()
+--    YAMLvars.sett.xfmDefault =      YAMLvars.setts.xfm
+--    YAMLvars.sett.prcDefault =      YAMLvars.setts.prc
+--    YAMLvars.sett.dftDefault =      YAMLvars.setts.dft
+--    YAMLvars.sett.allowUndeclared = YAMLvars.setts.undeclared
+--end
+--
+--function YAMLvars.restoresettings()
+--    YAMLvars.setts.xfm =      YAMLvars.sett.xfmDefault
+--    YAMLvars.setts.prc =      YAMLvars.sett.prcDefault
+--    YAMLvars.setts.dft =      YAMLvars.sett.dftDefault
+--    YAMLvars.setts.undeclared = YAMLvars.sett.allowUndeclared
+--    YAMLvars.tempdeclaresetts = ''
+--end
+
+
+-- todo need distinction beyyween table and penlight list ???
+    --val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
+    --return val:join('')
+    --return pl.tablex.reduce(_1.._2, val, '')
+
+
+
 
      --token.set_macro('@memoFr', k, 'global')
         --token.set_macro('@memoFrAddr', v, 'global')
@@ -640,3 +670,29 @@ return YAMLvars
 --    return s
 --end
 
+
+--
+--function YAMLvars.tempsettings()
+--    local s = YAMLvars.tempdeclaresetts or ''
+--    if string.find(s,'undeclared') then
+--        YAMLvars.setts.undeclared = true
+--    end
+--    if string.find(s,'addxspace') then
+--        --YAMLvars.setts.xfm = true
+--    end
+--end
+
+--local  function prc_undeclared(var, val)
+--    if YAMLvars.setts.undeclared then
+--        if YAMLvars.setts.prc == 'yvdef' then
+--            YAMLvars.prc.yvdef(var, val)
+--            YAMLvars.debugtalk(var..' = '..val,'yvdef made (undeclared)')
+--        else
+--            YAMLvars.makecmd(var, val)
+--            YAMLvars.debugtalk(var..' = '..val,'gdef made (undeclared)')
+--        end
+--     else
+--        --tex.print('\\PackageError{YAMLvars}{Variable "'..var..'" set but not declared}{}')
+--        YAMLvars.pkgerr('Variable "'..var..'" set but not declared')
+--    end
+--end

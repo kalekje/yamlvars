@@ -53,7 +53,7 @@
 \date{\today}
 
 
-\usepackage[pl,extrasnoglobals]{penlight}
+\usepackage[pl,extrasglobals]{penlight}
 \usepackage[overwritedefs]{YAMLvars}
 \title{YAMLvars}
 \subtitle{a YAML variable parser for LuaLaTeX}
@@ -75,7 +75,7 @@
 
 
 YAMLvars is a LuaLaTeX-based package to help make definitions or produce LaTeX code using a YAML file.
-This package might be useful for you if you want to batch create docummnts
+This package might be useful for you if you want to batch create documents
 by pushing various sets YAML data to a fixed LaTeX template,
 or just find it easier to read document metadata from a YAML file compared to the
 standard title, author, etc. commands.
@@ -128,7 +128,7 @@ like
 \section{Declaring variables}
 A declaration file can either be parsed with the command \texttt{declareYAMLvarsFile} command,
 or, if you want to do it \LaTeX, you can put the YAML code in the \texttt{declareYAMLvars} environment.
-It is a declaring YAML docuemnt is (like all YAML) key-value ditionary:
+It is a declaring YAML document is (like all YAML) key-value dictionary:
 The top level key is the name of the variable to be defined/used.
 If the value of the top level is a string: it's interpreted as a single transform function to be applied.
 Otherwise, it must
@@ -392,6 +392,32 @@ Items:
 \section{xfm, dec, prc functions (from yamlvars.lua)}
 
 \lstinputlisting[linerange=113-296]{yamlvars.lua}
+
+%
+%\AllowUndeclaredYV
+%\luadirect{YAMLvars.xfmDefault={'lb2nl','addxspace'}}
+
+\luadirect{YAMLvars.debug = true}
+\setYAMLvars{undeclared, xfm= lb2nl addxspace}
+\begin{parseYAMLvars}
+kale: |-
+  kale
+  ewasiuk
+\end{parseYAMLvars}
+
+\kale ee
+
+\setYAMLvars{undeclared, xfm=list2items}
+\begin{parseYAMLvars}
+lllist:
+  - one
+  - two
+  - three
+\end{parseYAMLvars}
+
+\begin{itemize}
+  \lllist
+\end{itemize}
 
 \end{document}
 
