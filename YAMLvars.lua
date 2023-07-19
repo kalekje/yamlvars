@@ -23,32 +23,12 @@
 --% OR OTHER DEALINGS IN THE SOFTWARE.
 
 
--- tinyyaml license
---MIT License
---
---Copyright (c) 2017 peposso
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
 
 YAMLvars = {} -- self table
 
-YAMLvars.yaml = require'markdown-tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
+YAMLvars.yaml = require'tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
+
+local luakeys = require'luakeys'()  -- note: YAMLvars.sty will have checked existence of this already
 
 local pl = _G['penlight'] or _G['pl'] -- penlight for this namespace is pl
 if (__PL_EXTRAS__ == nil) or  (__PENLIGHT__ == nil) then
@@ -95,7 +75,7 @@ function YAMLvars.updatesettskv(kv, res, def)
         YAMLvars.setts2default()
     end
 
-    kv = luakeys.parse(kv)
+    local kv = luakeys.parse(kv)
     if type(kv.xfm) == 'string' then
         kv.xfm = pl.stringx.split(kv.xfm)
     end
@@ -311,11 +291,6 @@ end
 -- --
 
 
--- ??
---token.set_macro('yv--'..var, val, 'global') -- todo fix with csname hack?
-
-
-
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 function YAMLvars.makecmd(cs, val) -- provide command via lua
@@ -323,7 +298,6 @@ function YAMLvars.makecmd(cs, val) -- provide command via lua
         YAMLvars.pkgerr('Variable '..cs..' already defined, could not declare')
     else
         pl.tex.defcmd(cs, val)
-        --token.set_macro(cs, val, 'global') -- issues if val contains undefined macro
     end
 end
 
@@ -371,8 +345,6 @@ function YAMLvars.declareYAMLvarsStr(y)
         end
         if YAMLvars.dec[YAMLvars.varspecs[var].prc] ~= nil then
             YAMLvars.dec[YAMLvars.varspecs[var].prc](var, YAMLvars.varspecs[var].dft)
-        --else -- actually don't a dec function for all
-        --    -- -- -- tex.print('\\PackageError{YAMLvars}{Declaration function for '..YAMLvarspecs[var].prc..'not found}{}')
         end
     end
     YAMLvars.debugtalk(YAMLvars.varspecs, 'declared YAML vars, varspecs')
@@ -402,15 +374,11 @@ local function eval_expr(func, var, val)
     if c == 0 then
         return _YV_invalid_expression
     else
-        --pl.tex.help_wrt(s, var)
-        --pl.tex.help_wrt(val, var)
         YAMLvars.valTemp = val
         YAMLvars.varTemp = var
-        --pl.tex.help_wrt(s, var)
         s, c = s:gsub('\2', '') -- strip \2 that might have appeared if / was applied
         s = sub_lua_var(' '..s, 'x', 'YAMLvars.valTemp')
         s = sub_lua_var(s, 'v', 'YAMLvars.varTemp')
-        --pl.tex.help_wrt(s, var)
         local f, err = pcall(loadstring(s))
         if not f then
             --tex.print('\\PackageError{YAMLvars}{xfm with "= or /" error on var "'..var..'"}{}') --
@@ -442,7 +410,6 @@ local function transform_and_prc(var, val)
     end
     f = YAMLvars.prc[YAMLvars.varspecs[var]['prc']]
     if f == nil then
-        --tex.print('\\PackageError{YAMLvars}{prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined}{}')
         YAMLvars.pkgerr('prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined')
     end
     f(var, val) -- prc the value of the variable
@@ -464,7 +431,6 @@ function YAMLvars.parseYAMLvarsStr(y)
             transform_and_prc(var, val)
         end
     end
-    --YAMLvars.restoresettings()
 end
 
 function YAMLvars.parseYAMLvarsFile(y)
@@ -506,7 +472,6 @@ function YAMLvars.getYAMLcli()
           end
       end
     end
-    --pl.tex.help_wrt(t)
     return t
  end
 
@@ -577,122 +542,8 @@ function YAMLvars.prc.memoFr(var, val)
 
     end
 end
--- produce \Var[val[2]\\val[3].....\val[n]]{val[1]}
---function YAMLvars.prc.setdocvarOpt(var, val)
---       if type(val) ~= 'table' then
---            val = {val}
---        end
---        local s = '\\'..var..'{'..tostring(val[1])..'}'
---        s = s..'['..pl.List(v):map_slice1():join()..']' -- what does this do?
---        tex.print(s)
---end
---
---
---function YAMLvars.prc.setdocvarOpts(var, val)
---        if type(val) ~= 'table' then
---            val = {val}
---        end
---        local s = '\\'..var..'{'..tostring(val[1])..'}'
---        for k, v in pairs(val) do
---            if k > 1 then
---                s = s..'['..tostring(v)..']'
---            end
---        end
---        tex.print(s)
---end
+
+
 
 return YAMLvars
 
-
-
-
-
-
-
-
---YAMLvars.tempdeclaresetts = '' -- temportary settings, todo intended to be passed as kv to envir
---
---function YAMLvars.storesettings()
---    YAMLvars.sett.xfmDefault =      YAMLvars.setts.xfm
---    YAMLvars.sett.prcDefault =      YAMLvars.setts.prc
---    YAMLvars.sett.dftDefault =      YAMLvars.setts.dft
---    YAMLvars.sett.allowUndeclared = YAMLvars.setts.undeclared
---end
---
---function YAMLvars.restoresettings()
---    YAMLvars.setts.xfm =      YAMLvars.sett.xfmDefault
---    YAMLvars.setts.prc =      YAMLvars.sett.prcDefault
---    YAMLvars.setts.dft =      YAMLvars.sett.dftDefault
---    YAMLvars.setts.undeclared = YAMLvars.sett.allowUndeclared
---    YAMLvars.tempdeclaresetts = ''
---end
-
-
--- todo need distinction beyyween table and penlight list ???
-    --val = pl.array2d.map_slice1(_1..'\\\\', val, 1,-2)
-    --return val:join('')
-    --return pl.tablex.reduce(_1.._2, val, '')
-
-
-
-
-     --token.set_macro('@memoFr', k, 'global')
-        --token.set_macro('@memoFrAddr', v, 'global')
-        --token.set_macro('@memoTo', k, 'global')
-        --token.set_macro('@memoToAddr', v, 'global')
-        --help_wrt(var,val)
-        --        token.set_macro('@'..var, val, 'global')
-
---function YAMLvars.prc.title(var, val)
---        YAMLvars.prc.setdocvar('title', val)
---end
---
---
---function YAMLvars.prc.author(var, val)
---        YAMLvars.prc.setdocvar('author', val)
---end
---
---function YAMLvars.prc.date(var, val)
---        YAMLvars.prc.setdocvar('date', val)
---end
-
-
-  --clean = clean or true
-    --if clean then -- clean first part of yaml string
-    --    y = clean_tex_spaces(y)
-    --end
---local function clean_tex_spaces(s)
---    pl.tex.help_wrt(s)
---    if s:sub(1,2) == '%s' then
---        s, _ = s:gsub('%s+','',1)
---    end
---    s, _ = s:gsub('\\par ','\n\n')
---    return s
---end
-
-
---
---function YAMLvars.tempsettings()
---    local s = YAMLvars.tempdeclaresetts or ''
---    if string.find(s,'undeclared') then
---        YAMLvars.setts.undeclared = true
---    end
---    if string.find(s,'addxspace') then
---        --YAMLvars.setts.xfm = true
---    end
---end
-
---local  function prc_undeclared(var, val)
---    if YAMLvars.setts.undeclared then
---        if YAMLvars.setts.prc == 'yvdef' then
---            YAMLvars.prc.yvdef(var, val)
---            YAMLvars.debugtalk(var..' = '..val,'yvdef made (undeclared)')
---        else
---            YAMLvars.makecmd(var, val)
---            YAMLvars.debugtalk(var..' = '..val,'gdef made (undeclared)')
---        end
---     else
---        --tex.print('\\PackageError{YAMLvars}{Variable "'..var..'" set but not declared}{}')
---        YAMLvars.pkgerr('Variable "'..var..'" set but not declared')
---    end
---end

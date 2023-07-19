@@ -54,7 +54,7 @@
 
 
 \usepackage[pl,extrasglobals]{penlight}
-\usepackage[overwritedefs]{YAMLvars}
+\usepackage[overwritedefs]{yamlvars}
 \title{YAMLvars}
 \subtitle{a YAML variable parser for LuaLaTeX}
 
@@ -107,14 +107,10 @@ will br thrown if the name exists. Alternatively, you can use the commands \cmd{
 \llcmd{overwritedefs}Danger! This will allow you to \cmd{gdef} commands with YAML. Caution should be taken to not set definitions like \cmd{begin}, \cmd{section}, etc.
 
 \section{Dependencies}
-%This package contains the \texttt{tinyyaml} Lua package.
-\llcmd{Note:}This package requires that the \cmd{markdown} (\url{https://ctan.org/pkg/markdown}) be installed. This package does not use the package in its entirety, but rather depends on the YAML interpreter it comes with: \cmd{markdown-tinyyaml.lua}. This dependency is chosen to avoid redundancy in your TeX installation and align development of the \cmd{tinyyaml} Lua package.
-If you want to use the YAML interpreter for other purposes, you can bring it into Lua by either:
-\begin{verbatim}
-\directlua{yaml = YAMLvars.yaml}           or
-\directlua{yaml = require'markdown-tinyyaml'}
-\end{verbatim}
+\llcmd{Note:}This package requires the \cmd{tinyyaml} package, available on CTAN.
+
 The distribution: \url{https://github.com/api7/lua-tinyyaml}\\
+\ \ \ \ \url{https://ctan.org/pkg/lua-tinyyaml}\\
 The YAML specification: \url{https://yaml.org/spec/}\\
 
 Many of the ``transform'' and ``processing'' functions built-in to this package rely on other packages,
@@ -397,27 +393,28 @@ Items:
 %\AllowUndeclaredYV
 %\luadirect{YAMLvars.xfmDefault={'lb2nl','addxspace'}}
 
-\luadirect{YAMLvars.debug = true}
-\setYAMLvars{undeclared, xfm= lb2nl addxspace}
-\begin{parseYAMLvars}
-kale: |-
-  kale
-  ewasiuk
-\end{parseYAMLvars}
-
-\kale ee
-
-\setYAMLvars{undeclared, xfm=list2items}
-\begin{parseYAMLvars}
-lllist:
-  - one
-  - two
-  - three
-\end{parseYAMLvars}
-
-\begin{itemize}
-  \lllist
-\end{itemize}
+%
+%\luadirect{YAMLvars.debug = true}
+%\setYAMLvars{undeclared, xfm= lb2nl addxspace}
+%\begin{parseYAMLvars}
+%kale: |-
+%  kale
+%  eee
+%\end{parseYAMLvars}
+%
+%\kale ee
+%
+%\setYAMLvars{undeclared, xfm=list2items}
+%\begin{parseYAMLvars}
+%lllist:
+%  - one
+%  - two
+%  - three
+%\end{parseYAMLvars}
+%
+%\begin{itemize}
+%  \lllist
+%\end{itemize}
 
 \end{document}
 

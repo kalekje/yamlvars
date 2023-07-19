@@ -27,13 +27,14 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{yamlvars}[+REVDATE+]
 
-\IfFileExists{markdown-tinyyaml.lua}{}{\PackageError{YAMLvars}{This package requires installation of the 'markdown' package, please install it and try again}{}}
-
 \RequirePackage{luacode}
 \RequirePackage{xspace}
 \RequirePackage{etoolbox}
 \RequirePackage{luakeys}
 \RequirePackage{penlight} % no option passed here, but extras must be used, error will be thrown if not
+
+%\IfFileExists{tinyyaml.lua}{}{\PackageError{yamlvars}{This package requires installation of the 'tinyyaml' package, please install it and try again}{}}
+
 
 \luadirect{YAMLvars = require('YAMLvars')}
 
