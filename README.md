@@ -1,13 +1,13 @@
 # YAMLvars -- parse a YAML document and create definitions in LaTeX
 
 This LuaLaTeX package provides a YAML parser and some functions to declare and define LaTeX definitions using YAML files. 
-It uses the [`markdown-tinyyaml`](https://github.com/api7/lua-tinyyaml) parser that is shipped with the [`markdown`](https://ctan.org/pkg/markdown) package.
+It uses the [`tinyyaml`](https://ctan.org/pkg/lua-tinyyaml) parser.
 
 
 
 # License
 
-Copyright (C) 2021-2022 Kale Ewasiuk
+Copyright (C) 2021-2023 Kale Ewasiuk
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

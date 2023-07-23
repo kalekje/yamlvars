@@ -1,6 +1,6 @@
 --% Kale Ewasiuk (kalekje@gmail.com)
 --% +REVDATE+
---% Copyright (C) 2021-2022 Kale Ewasiuk
+--% Copyright (C) 2021-2023 Kale Ewasiuk
 --%
 --% Permission is hereby granted, free of charge, to any person obtaining a copy
 --% of this software and associated documentation files (the "Software"), to deal
@@ -28,12 +28,9 @@ YAMLvars = {} -- self table
 
 YAMLvars.yaml = require'tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
 
-local luakeys = require'luakeys'()  -- note: YAMLvars.sty will have checked existence of this already
+YAMLvars.luakeys = require'luakeys'()  -- note: YAMLvars.sty will have checked existence of this already
 
-local pl = _G['penlight'] or _G['pl'] -- penlight for this namespace is pl
-if (__PL_EXTRAS__ == nil) or  (__PENLIGHT__ == nil) then
-    tex.sprint('\\PackageError{yamlvars}{penlight package with extras (or extrasnoglobals) option must be loaded before this package}{}')
-end
+local pl = penlight
 
 -- UI tables to extend functionality
 YAMLvars.xfm = {}
@@ -75,7 +72,7 @@ function YAMLvars.updatesettskv(kv, res, def)
         YAMLvars.setts2default()
     end
 
-    local kv = luakeys.parse(kv)
+    local kv = YAMLvars.luakeys.parse(kv)
     if type(kv.xfm) == 'string' then
         kv.xfm = pl.stringx.split(kv.xfm)
     end

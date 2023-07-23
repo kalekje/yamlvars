@@ -1,6 +1,6 @@
 % Kale Ewasiuk (kalekje@gmail.com)
 % +REVDATE+
-% Copyright (C) 2021-2022 Kale Ewasiuk
+% Copyright (C) 2021-2023 Kale Ewasiuk
 %
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,6 @@
 \date{\today}
 
 
-\usepackage[pl,extrasglobals]{penlight}
 \usepackage[overwritedefs]{yamlvars}
 \title{YAMLvars}
 \subtitle{a YAML variable parser for LuaLaTeX}
@@ -115,10 +114,9 @@ The YAML specification: \url{https://yaml.org/spec/}\\
 
 Many of the ``transform'' and ``processing'' functions built-in to this package rely on other packages,
 like
-\texttt{hyperref}, for example, but it is not loaded, and this package will only load
-\cmd{penlight},
-\cmd{luacode},
-\cmd{xspace}, and
+\texttt{hyperref}, or \texttt{xspace} for example, but they are not loaded, and this package will only load
+\cmd{penlightplus},
+\cmd{luacode}, \cmd{luakeys}, and
 \cmd{etoolbox}.
 
 \section{Declaring variables}

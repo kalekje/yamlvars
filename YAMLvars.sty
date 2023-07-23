@@ -1,6 +1,6 @@
 % Kale Ewasiuk (kalekje@gmail.com)
 % +REVDATE+
-% Copyright (C) 2021-2022 Kale Ewasiuk
+% Copyright (C) 2021-2023 Kale Ewasiuk
 %
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,9 @@
 \ProvidesPackage{yamlvars}[+REVDATE+]
 
 \RequirePackage{luacode}
-\RequirePackage{xspace}
 \RequirePackage{etoolbox}
 \RequirePackage{luakeys}
-\RequirePackage{penlight} % no option passed here, but extras must be used, error will be thrown if not
+\RequirePackage{penlightplus} % no option passed here, but extras must be used, error will be thrown if not
 
 %\IfFileExists{tinyyaml.lua}{}{\PackageError{yamlvars}{This package requires installation of the 'tinyyaml' package, please install it and try again}{}}
 
@@ -94,19 +93,19 @@ YAMLvars.xfmDefault = {'lb2nl','addxspace'}
 }}
 
 
-\newenvironment{declareYAMLvars}{\luadirect{_G[__PENLIGHT__].tex.startrecording()}}{\luadirect{_G[__PENLIGHT__].tex.stoprecording()}
-        \luadirect{YAMLvars.declareYAMLvarsStr(_G[__PENLIGHT__].tex.recordedbuf)}
+\newenvironment{declareYAMLvars}{\luadirect{penlight.tex.startrecording()}}{\luadirect{penlight.tex.stoprecording()}
+        \luadirect{YAMLvars.declareYAMLvarsStr(penlight.tex.recordedbuf)}
 }
 
 
 \NewDocumentEnvironment{parseYAMLvars}{}%
 {\luadirect{
-  _G[__PENLIGHT__].tex.startrecording()
+  penlight.tex.startrecording()
 }}%
 {\luadirect{
-  _G[__PENLIGHT__].tex.stoprecording()
+  penlight.tex.stoprecording()
 }}
-\AfterEndEnvironment{parseYAMLvars}{\luadirect{YAMLvars.parseYAMLvarsStr(_G[__PENLIGHT__].tex.recordedbuf)}}
+\AfterEndEnvironment{parseYAMLvars}{\luadirect{YAMLvars.parseYAMLvarsStr(penlight.tex.recordedbuf)}}
 % necessary hack to get rohead and lohead to work..
 % .. https://tex.stackexchange.com/questions/637018/setting-koma-heading-within-lua/637021?noredirect=1#comment1587387_637021
 
@@ -116,10 +115,10 @@ YAMLvars.xfmDefault = {'lb2nl','addxspace'}
 
 
 
-\newenvironment{parseYAMLpdfdata}{\luadirect{_G[__PENLIGHT__].tex.startrecording()}}{
-  \luadirect{_G[__PENLIGHT__].tex.stoprecording()
-  YAMLvars.yaml2PDFmetadata(_G[__PENLIGHT__].tex.recordedbuf)
-  _G[__PENLIGHT__].tex.writePDFmetadata()
+\newenvironment{parseYAMLpdfdata}{\luadirect{penlight.tex.startrecording()}}{
+  \luadirect{penlight.tex.stoprecording()
+  YAMLvars.yaml2PDFmetadata(penlight.tex.recordedbuf)
+  penlight.tex.writePDFmetadata()
   }
 }
 
