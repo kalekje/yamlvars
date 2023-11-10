@@ -48,7 +48,10 @@ YAMLvars.varTemp = ''
 
 YAMLvars.debug = false
 
+
 YAMLvars.setts = {}
+YAMLvars.setts.parseopts = {timestamps=false}
+YAMLvars.setts.decstr = 'xfm' -- if in declaration key, value is a string, how should it be treated
 YAMLvars.setts.undeclared = false
 YAMLvars.setts.overwrite = false
 YAMLvars.setts.lowercase = false
@@ -325,7 +328,7 @@ local function default_stuff()
 end
 
 function YAMLvars.declareYAMLvarsStr(y)
-    local t = YAMLvars.yaml.parse(y)
+    local t = YAMLvars.yaml.parse(y, YAMLvars.setts.parseopts)
     for var, specs in pairs(t) do
         if pl.hasval(specs['lowcasevar']) or YAMLvars.setts.lowercase then
             var = var:lower()
@@ -333,9 +336,11 @@ function YAMLvars.declareYAMLvarsStr(y)
         end
         YAMLvars.varspecs[var] = default_stuff()
         if type(specs) == 'string' then
-            specs = {xfm={specs}}
+            if YAMLvars.setts.decstr == 'xfm' then specs = {xfm={specs}} end
+            if YAMLvars.setts.decstr == 'dft' then specs = {dft=specs} end
+            if YAMLvars.setts.decstr == 'prc' then specs = {prc=specs} end
         end
-        if specs['xfm'] == nil then specs['xfm'] = {} end
+        if specs['xfm'] == nil then specs['xfm'] = YAMLvars.setts.xfm end
         for s, p in pairs(specs) do
             if s == 'xfm' and type(p) ~= 'table' then p = {p} end
             YAMLvars.varspecs[var][s] = p -- set property of var
@@ -402,6 +407,8 @@ local function transform_and_prc(var, val)
                 val = val2
             end
         else
+            YAMLvars.debugtalk('function: '..func..'\nvariable: '.. var .. '\n' ..
+        'value: '.. tostring(val) .. '\nval type: ' ..type(val), "Applying transforming (xfm) function")
             val = f(var, val)
         end
     end
@@ -409,13 +416,16 @@ local function transform_and_prc(var, val)
     if f == nil then
         YAMLvars.pkgerr('prc function "'..YAMLvars.varspecs[var]['prc']..'" on var "'..var..'" not defined')
     end
+    YAMLvars.debugtalk('function: '..YAMLvars.varspecs[var]['prc']..'\nvariable: '.. var .. '\n' ..
+                 'value: '.. tostring(val) .. '\nval type: ' ..type(val), "Applying processing (prc) function")
     f(var, val) -- prc the value of the variable
 end
 
 
 
 function YAMLvars.parseYAMLvarsStr(y)
-    YAMLvars.varsvals = YAMLvars.yaml.parse(y)
+    YAMLvars.debugtalk(YAMLvars.varsvals, 'Parsing YAML vars with table')
+    YAMLvars.varsvals = YAMLvars.yaml.parse(y, YAMLvars.setts.parseopts)
     for var, val in pairs(YAMLvars.varsvals) do
         if YAMLvars.varslowcase:contains(var:lower()) then
             var = var:lower()
@@ -477,7 +487,7 @@ function YAMLvars.getYAMLcli()
 YAMLvars.yaml2PDFmetadata = function(ytext) -- parse a YAML file and update the pdfmetadata table
       __PDFmetadata__ = __PDFmetadata__ or {} -- existing metadata
       if ytext ~= nil then
-        local pdfmetadata_yaml = YAMLvars.yaml.parse(ytext) -- new metadata
+        local pdfmetadata_yaml = YAMLvars.yaml.parse(ytext, {timestamps = false}) -- new metadata
         local t = {}
         for k,v in pairs(pdfmetadata_yaml) do  -- ensure first character is capital letter
             t[k:upfirst()] = v

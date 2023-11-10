@@ -38,7 +38,9 @@
 \luadirect{YAMLvars = require('YAMLvars')}
 
 \DeclareOption{useyv}{
-        \gdef\yv#1{\csname yv--#1\endcsname}
+    \newcommand\yv{}
+    \gdef\yv#1{\csname yv--#1\endcsname}  % todo not working... why??
+%      \NewDocumentCommand{\yv}{m}{\luadirect{tex.sprint(tostring(token.get_macro('yv--'..\luastring{#1})))}}
         \luadirect{YAMLvars.setts.prc = 'yvdef'}
         \luadirect{YAMLvars.settsdefault.prc = 'yvdef'}
 }
@@ -58,7 +60,8 @@
 
 
 
-%% todo delete below
+\newcommand{\yamlvarsdebugon}{\luadirect{YAMLvars.debug = true}}
+\newcommand{\yamlvarsdebugoff}{\luadirect{YAMLvars.debug = false}}
 \newcommand{\lowercasevarYVon}{\luadirect{YAMLvars.lowvasevarall = true}}
 \newcommand{\lowercasevarYVoff}{\luadirect{YAMLvars.lowvasevarall = false}}
 \newcommand{\AllowUndeclaredYV}{\luadirect{YAMLvars.setts.undeclared = true}}
@@ -130,7 +133,7 @@ YAMLvars.xfmDefault = {'lb2nl','addxspace'}
 }}
 
 \NewDocumentCommand{\setdefYAMLvars}{ m }{\luadirect{
-  YAMLvars.updatesettskv(pl.tex._xFalse, \luastring{#1}, true)
+  YAMLvars.updatesettskv(\luastring{#1}, pl.tex._xFalse, true)
 }}
 
 %  \IfBooleanTF{#1}{\luadirect{YAMLvars.setts = pl.tablex.deepcopy(YAMLvars.settsdefault)}}{} % if * return to default first
