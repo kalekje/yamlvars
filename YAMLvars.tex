@@ -121,20 +121,21 @@ like
 \cmd{luacode}, \cmd{luakeys}, and
 \cmd{etoolbox}.
 
-\section{Some utilities}
-\cmd{\setdefYAMLvars*{}} changes the default settings from key-vals.
-\cmd{\setYAMLvars*{}} changes the current settings from key-vals. Use \cmd{*} if you want to first restore to defaults.
-
-\cmd{YAMLvars.setts.}
-\cmd{parseopts} table passed to YAML parser options         \\
-\cmd{decstr}   in the declaration YAML text, if a value is a string, how should it be treated (xfm, dft, or prc)       \\
-\cmd{undeclared} boolean          \\
-\cmd{overwrite}  boolean       \\
-\cmd{lowercase}  boolean       \\
-\cmd{tabmidrule}          \\
-\cmd{xfm}    default xfm     \\
-\cmd{prc}    default prc     \\
-\cmd{dft}    default dft     \\
+\section{Settings}
+\cmd{\setdefYAMLvars{kv}} changes the default settings of key-vals.\\
+\cmd{\setYAMLvars*{kv}} changes the current settings from key-vals. Use \cmd{*} if you want to first restore to defaults.
+  
+  The \cmd{YAMLvars.setts} lua table contains the settings, which are:\\
+\cmd{parseopts} table passed to YAML parser options  (default is \cmd{{timestamps=false}})       \\
+\cmd{decstr}   in the declaration YAML text, if a value is a string, how should it be treated (\cmd{xfm, dft, or prc})       \\
+\cmd{undeclared} boolean  for allowing parsing of undeclared vars        \\
+\cmd{overwrite}  boolean for allowing overwriting of previous definitions     \\
+\cmd{lowercase}  boolean for auto-changing vars to lowercase       \\
+\cmd{prcstring}  boolean for auto-converting final value before processing (sometimes) numbers can have odd effects       \\
+%\cmd{tabmidrule} type of rule for tabu          \\
+\cmd{xfm}    default xfm function(s) if none passed to declared key, separated by space     \\
+\cmd{prc}    default prc function if none passed to declared key     \\
+\cmd{dft}    default dft function if none passed to declared key     \\
 
 
 \section{Declaring variables}

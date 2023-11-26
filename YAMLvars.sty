@@ -134,7 +134,7 @@ YAMLvars.xfmDefault = {'lb2nl','addxspace'}
 
 \NewDocumentCommand{\setdefYAMLvars}{ m }{\luadirect{
   YAMLvars.updatesettskv(\luastring{#1}, pl.tex._xFalse, true)
-}}
+}} % set the default settings
 
 %  \IfBooleanTF{#1}{\luadirect{YAMLvars.setts = pl.tablex.deepcopy(YAMLvars.settsdefault)}}{} % if * return to default first
 %  \luadirect{pl.tablex.update(YAMLvars.setts, luakeys.parse(\luastring{#2}))}
