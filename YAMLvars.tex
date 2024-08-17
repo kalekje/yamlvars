@@ -103,9 +103,8 @@ will br thrown if the name exists. Alternatively, you can use the commands \cmd{
 (only if it wasn't defined previously).
 If you use this setting, unless otherwise specified, YAML variables will be accessible under
 the \texttt{\textbackslash yv\{<var>\}} command.
-This also allows numbers and symbols in the variable names.
 Note that internally, the variables are stored in the command sequence
-\texttt{yv--<var>}. This option is currently under repair and will not work properly in this version.
+\cmd{\yv<var>}.
 
 \section{Dependencies}
 \llcmd{Note:}This package requires the \cmd{tinyyaml} package, available on CTAN.
@@ -230,6 +229,7 @@ Rhead: \today
 \end{parseYAMLvars}
 \end{verbatim}
 
+Note: all whitespace is stripped from the variable name when parsing.
 
  \section{xfm -- Transform Functions}
 These functions accept two arguments: \texttt{(var, val)} where \texttt{var} is the variable (or key) and val is the value.
@@ -404,7 +404,7 @@ Items:
 \clearpage
 \section{xfm, dec, prc functions (from yamlvars.lua)}
 
-\lstinputlisting[linerange=113-296]{yamlvars.lua}
+\lstinputlisting[linerange=111-315]{yamlvars.lua}
 
 %
 %\AllowUndeclaredYV

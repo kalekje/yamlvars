@@ -51,10 +51,11 @@ YAMLvars.debug = false
 
 YAMLvars.setts = {}
 YAMLvars.setts.parseopts = {timestamps=false}
-YAMLvars.setts.decstr = 'xfm' -- if in declaration key, value is a string, how should it be treated
+YAMLvars.setts.decstr = 'xfm' -- if in declaration key the value is a string (instead of dec/xfm/prc table), how should it be treated
 YAMLvars.setts.undeclared = false
 YAMLvars.setts.overwrite = false
 YAMLvars.setts.lowercase = false
+YAMLvars.setts.stripvars = true  -- todo add this as an option accessible in latex
 YAMLvars.setts.tabmidrule = 'midrule'
 YAMLvars.setts.prcstring = true
 YAMLvars.setts.xfm = {}
@@ -86,7 +87,7 @@ end
 
 function YAMLvars.debugtalk(s, ss)
     if YAMLvars.debug then
-        pl.tex.help_wrt(s, ss)
+        pl.tex.wrth(s, ss)
     end
 end
 
@@ -96,9 +97,11 @@ end
 
 
 
+
+
 function YAMLvars.xfm.markdown(var, val)
      --return '\\begin{markdown} '..val..'\n \\end{markdown}'
-     pl.tex.help_wrt(val, md)
+     pl.tex.wrth(val, md)
      return [[begin markdown ..val..
 
      par end markdown]]
@@ -195,7 +198,7 @@ function YAMLvars.dec.gdef(var, dft)
 end
 
 function YAMLvars.dec.yvdef(var, dft)
-        YAMLvars.deccmd('yv--'..var, dft)
+        YAMLvars.deccmd('yv'..var, dft)
 end
 
 function YAMLvars.dec.toggle(var, dft)
@@ -204,6 +207,7 @@ function YAMLvars.dec.toggle(var, dft)
 end
 
 function YAMLvars.dec.length(var, dft)
+        dft = dft or '0pt'
         tex.print('\\global\\newlength{\\'..var..'}')
         YAMLvars.prc.length(var, dft)
 end
@@ -219,8 +223,8 @@ function YAMLvars.prc.gdef(var, val)
 end
 
 function YAMLvars.prc.yvdef(var, val)
-    pl.tex.defmacro('yv--'..var, val)
-    YAMLvars.debugtalk('yv--'..var..' = '..val, 'prc yvdef')
+    pl.tex.defcmd('yv'..var, val)
+    YAMLvars.debugtalk('yv'..var..' = '..val, 'prc yvdef')
 end
 
 function YAMLvars.prc.toggle(t, v) -- requires penlight extras
@@ -335,7 +339,10 @@ function YAMLvars.declareYAMLvarsStr(y)
             var = var:lower()
             YAMLvars.varslowcase:append(var)
         end
-        YAMLvars.varspecs[var] = default_stuff()
+        if YAMLvars.setts.stripvars then -- todo move to a func for easier use
+            var = var:gsub("%s+", "")
+        end
+        YAMLvars.varspecs[var] = default_stuff()  -- assign default specs of a variable to the current var
         if type(specs) == 'string' then
             if YAMLvars.setts.decstr == 'xfm' then specs = {xfm={specs}} end
             if YAMLvars.setts.decstr == 'dft' then specs = {dft=specs} end
@@ -423,17 +430,20 @@ local function transform_and_prc(var, val)
     if YAMLvars.setts.prcstring then
         val = tostring(val)
     end
-    f(var, val) -- prc the value of the variable
+    f(pl.stringx.strip(var), val) -- prc the value of the variable
 end
 
 
 
 function YAMLvars.parseYAMLvarsStr(y)
-    YAMLvars.debugtalk(YAMLvars.varsvals, 'Parsing YAML vars with table')
+    YAMLvars.debugtalk('', 'Parsing YAML vars...')
     YAMLvars.varsvals = YAMLvars.yaml.parse(y, YAMLvars.setts.parseopts)
     for var, val in pairs(YAMLvars.varsvals) do
         if YAMLvars.varslowcase:contains(var:lower()) then
             var = var:lower()
+        end
+        if YAMLvars.setts.stripvars then -- todo move to a func for easier use
+            var = var:gsub("%s+", "")
         end
         if YAMLvars.varspecs[var] == nil and YAMLvars.setts.undeclared then
             YAMLvars.debugtalk(YAMLvars.setts, 'XYZ')

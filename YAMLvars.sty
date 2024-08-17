@@ -37,10 +37,12 @@
 
 \luadirect{YAMLvars = require('YAMLvars')}
 
+
+
+
+
 \DeclareOption{useyv}{
-    \newcommand\yv{}
-    \gdef\yv#1{\csname yv--#1\endcsname}  % todo not working... why??
-%      \NewDocumentCommand{\yv}{m}{\luadirect{tex.sprint(tostring(token.get_macro('yv--'..\luastring{#1})))}}
+       \NewDocumentCommand{\yv}{m}{\csuse{yv#1}}
         \luadirect{YAMLvars.setts.prc = 'yvdef'}
         \luadirect{YAMLvars.settsdefault.prc = 'yvdef'}
 }
