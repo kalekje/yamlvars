@@ -37,6 +37,11 @@
 
 \luadirect{YAMLvars = require('YAMLvars')}
 
+\luadirect{
+  if YAMLvars.yaml == nil then
+      tex.sprint('\\PackageError{yamlvars}{"tinyyaml.lua" not found. Install the "lua-tinyyaml" package from CTAN or include "tinyyaml.lua" in your project}{}')
+  end
+}
 
 
 
@@ -92,6 +97,9 @@ YAMLvars.xfmDefault = {'lb2nl','addxspace'}
 \luadirect{YAMLvars.setts2default()}
 
 
+\NewDocumentCommand{\YAMLvarsSetKeyVals}{}{\luadirect{YAMLvars.callkeyvals()}}
+
+
 \newcommand{\declareYAMLvarsFile}[1]{\luadirect{YAMLvars.declareYAMLvarsFile(\luastring{#1})}}
 \NewDocumentCommand{\parseYAMLvarsFile}{m}{\luadirect{
   YAMLvars.parseYAMLvarsFile(\luastring{#1})
@@ -110,7 +118,7 @@ YAMLvars.xfmDefault = {'lb2nl','addxspace'}
 {\luadirect{
   penlight.tex.stoprecording()
 }}
-\AfterEndEnvironment{parseYAMLvars}{\luadirect{YAMLvars.parseYAMLvarsStr(penlight.tex.recordedbuf)}}
+\AfterEndEnvironment{parseYAMLvars}{\luadirect{YAMLvars.parseYAMLvarsStr(penlight.tex.recordedbuf)}\YAMLvarsSetKeyVals}
 % necessary hack to get rohead and lohead to work..
 % .. https://tex.stackexchange.com/questions/637018/setting-koma-heading-within-lua/637021?noredirect=1#comment1587387_637021
 

@@ -28,6 +28,7 @@ YAMLvars = {} -- self table
 
 YAMLvars.yaml = require'tinyyaml' -- note: YAMLvars.sty will have checked existence of this already
 
+
 YAMLvars.luakeys = require'luakeys'()  -- note: YAMLvars.sty will have checked existence of this already
 
 local pl = penlight
@@ -57,7 +58,7 @@ YAMLvars.setts.overwrite = false
 YAMLvars.setts.lowercase = false
 YAMLvars.setts.stripvars = true  -- todo add this as an option accessible in latex
 YAMLvars.setts.tabmidrule = 'midrule'
-YAMLvars.setts.prcstring = true
+YAMLvars.setts.prcstring = 'number'
 YAMLvars.setts.xfm = {}
 YAMLvars.setts.prc = 'gdef'
 YAMLvars.setts.dft = ''
@@ -296,6 +297,29 @@ end
 -- --
 
 
+
+YAMLvars.curr_keyvals = {}
+function YAMLvars.prc.keyvals(var, val)
+    YAMLvars.curr_keyvals[var] = val
+end
+function YAMLvars.callkeyvals()
+    for var, tbl in pairs(YAMLvars.curr_keyvals) do
+        local cmd = '\\'..var..'{'
+        for key, val in pairs(tbl) do
+            if tonumber(key) ~= nil then
+                cmd = cmd .. val
+            else
+                cmd = cmd .. key .. '=' .. val
+            end
+            cmd = cmd .. ','
+        end
+        tex.sprint(cmd..'}')
+    end
+    YAMLvars.curr_keyvals = {}
+end
+
+
+
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
 function YAMLvars.makecmd(cs, val) -- provide command via lua
@@ -427,7 +451,7 @@ local function transform_and_prc(var, val)
     YAMLvars.debugtalk('function: '..YAMLvars.varspecs[var]['prc']..'\nvariable: '.. var .. '\n' ..
                  'value: '.. tostring(val) .. '\nval type: ' ..type(val), "Applying processing (prc) function")
 
-    if YAMLvars.setts.prcstring then
+    if YAMLvars.setts.prcstring:find(type(val)) then
         val = tostring(val)
     end
     f(pl.stringx.strip(var), val) -- prc the value of the variable
